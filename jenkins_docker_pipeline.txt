@@ -1,0 +1,45 @@
+pipeline{
+    tools{
+        jdk 'java'
+        maven 'maven'
+        }
+    agent {label 'linuxslv'}    
+    stages{
+        stage('checkout'){
+            steps{
+                git 'https://github.com/tejaspandit14/DevOpsClassCodes.git'
+            }
+        }
+        stage('compile'){
+            steps{
+                sh 'mvn compile'
+            }
+        }
+        stage('Package'){
+            steps{
+                sh 'mvn package'
+            }
+        }
+        stage('Build Docker Image'){
+            steps{
+                sh '''
+                rm -rf tomcat
+                mkdir tomcat
+                cd tomcat/
+                cp /home/user1/tomcat/Dockerfile .
+                cp ../target/addressbook.war .
+                yes Y | sudo docker image prune -a
+                sudo docker build -t addressbook:build$BUILD_NUMBER .
+                sh '''
+            }
+        }
+        stage('Upload Docker image to hub repo'){
+            steps{
+            sh '''
+            sudo docker tag addressbook:build$BUILD_NUMBER tejaspandit/addressbook:build$BUILD_NUMBER
+            sudo docker push tejaspandit/addressbook:build$BUILD_NUMBER
+            sh '''
+            }
+        }
+    }    
+}
